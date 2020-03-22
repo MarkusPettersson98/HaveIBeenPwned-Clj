@@ -26,9 +26,9 @@
     (assoc password
       :pwned
       (into {}
-            (map #(str/split % #":")
-                 (map #(str short-hash %)
-                      (read-lines request-url)))))))
+            (map (comp (fn [hash-n-count] (str/split hash-n-count #":"))
+                       (partial str short-hash))
+                 (read-lines request-url))))))
 
 ;; Do some formatting on the result
 (defn pwned? [{hash :hash pwned :pwned password :password}]
