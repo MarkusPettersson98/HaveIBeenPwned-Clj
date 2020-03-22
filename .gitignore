@@ -1,3 +1,5 @@
+# Project specific
+/resources/*.txt
 # Leiningen
 /target
 /classes
