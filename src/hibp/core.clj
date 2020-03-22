@@ -20,27 +20,29 @@
 ;; DONE: Make request against api for every password
 (def api-url "https://api.pwnedpasswords.com/range/")
 
-(defn fetch-pwned [password]
-  (let [short-hash (password :short-hash)
-        request-url (str api-url short-hash)]
+(defn fetch-pwned-stats [{hash :hash short-hash :short-hash :as password}]
+  (let [request-url (str api-url short-hash)]
     (assoc password
       :pwned
-      (into {}
-            (map (comp (fn [hash-n-count] (str/split hash-n-count #":"))
-                       (partial str short-hash))
-                 (read-lines request-url))))))
+      (get (->> request-url
+                (read-lines)
+                (map (comp (fn [hash-n-count]
+                             (str/split hash-n-count #":"))
+                           (partial str short-hash)))
+                (into {}))
+           hash))))
 
 ;; Do some formatting on the result
-(defn pwned? [{hash :hash pwned :pwned password :password}]
-  (if-let [result (get pwned hash)]
-    (format "%s has been pwned %s times" password result)))
+(defn pwned? [{occurrences :pwned password :password}]
+  (if (some? occurrences)
+    (format "%s has been pwned %s times" password occurrences)
+    (format "%s has not been pwned!" password)))
 
 (defn -main [& args]
   ;; Read args as filename
-  (def passwords (mapcat read-lines args))
-
-  ;; Check which passwords have been leaked on the web
-  (dorun
-    (for [password passwords]
-      (if-let [pwned-password (pwned? (fetch-pwned (do-the-hash password)))]
-        (println pwned-password)))))
+  (let [passwords (mapcat read-lines args)]
+    ;; Check which passwords have been leaked on the web
+    (dorun
+      (for [password passwords]
+        (let [pwned-password (pwned? (fetch-pwned-stats (do-the-hash password)))]
+          (println pwned-password))))))
