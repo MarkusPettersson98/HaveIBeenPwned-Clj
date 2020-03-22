@@ -4,11 +4,9 @@
             [digest :refer :all]))
 
 ;; DONE: Implement function for reading passwords from file
-(defn read-passwords [file]
+(defn read-lines [resource]
   (str/split-lines
-    (slurp file)))
-
-(def passwords (read-passwords "resources/passwords.txt"))
+    (slurp resource)))
 
 ;; DONE: Hash passwords using SHA-1
 ;; Create a mapping between a password, it's hash and a shortened hash
@@ -19,8 +17,6 @@
      :hash       hashed-password
      :short-hash short-hashed-password}))
 
-(def hashed-passwords (map do-the-hash passwords))
-
 ;; DONE: Make request against api for every password
 (def api-url "https://api.pwnedpasswords.com/range/")
 
@@ -30,8 +26,7 @@
     (assoc password
       :pwned
       (->> request-url
-           (slurp)
-           (str/split-lines)
+           (read-lines)
            (map #(str short-hash %))
            (map #(str/split % #":"))
            (into {})))))
@@ -43,7 +38,7 @@
 
 (defn -main [& args]
   ;; Read args as filename
-  (def passwords (mapcat read-passwords args))
+  (def passwords (mapcat read-lines args))
 
   ;; Check which passwords have been leaked on the web
   (dorun
